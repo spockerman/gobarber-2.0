@@ -33,8 +33,10 @@ class User {
 
   @Expose({ name: "avatar_url" })
   getAvatarUrl(): string | null {
+    const appApiUrl = process.env.APP_API_URL || "http://localhost:3333";
+
     return this.avatar
-      ? `${process.env.APP_API_URL}/files/${this.avatar}`
+      ? `${appApiUrl}/files/${this.avatar}`
       : null;
   }
 }
