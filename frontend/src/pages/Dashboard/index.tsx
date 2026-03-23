@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FiPower, FiClock } from "react-icons/fi";
 import { isToday, format, parseISO, isAfter } from "date-fns";
 import ptBR from "date-fns/locale/pt-BR";
+import axios from "axios";
 import DayPicker, { DayModifiers } from "react-day-picker";
 import "react-day-picker/lib/style.css";
 
@@ -61,19 +62,38 @@ const Dashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const cancelTokenSource = axios.CancelToken.source();
+    let isMounted = true;
+
     api
       .get(`/providers/${user.id}/month-availability`, {
         params: {
           year: currentMonth.getFullYear(),
           month: currentMonth.getMonth() + 1,
         },
+        cancelToken: cancelTokenSource.token,
       })
       .then(response => {
-        setMonthAvailability(response.data);
+        if (isMounted) {
+          setMonthAvailability(response.data);
+        }
+      })
+      .catch(error => {
+        if (!axios.isCancel(error)) {
+          console.error(error);
+        }
       });
+
+    return () => {
+      isMounted = false;
+      cancelTokenSource.cancel();
+    };
   }, [currentMonth, user.id]);
 
   useEffect(() => {
+    const cancelTokenSource = axios.CancelToken.source();
+    let isMounted = true;
+
     api
       .get<Appointments[]>("/appointments/me", {
         params: {
@@ -81,6 +101,7 @@ const Dashboard: React.FC = () => {
           month: selectedDate.getMonth() + 1,
           day: selectedDate.getDate(),
         },
+        cancelToken: cancelTokenSource.token,
       })
       .then(response => {
         const appointmentsFormatted = response.data.map(appointment => {
@@ -90,8 +111,20 @@ const Dashboard: React.FC = () => {
           };
         });
 
-        setAppointments(appointmentsFormatted);
+        if (isMounted) {
+          setAppointments(appointmentsFormatted);
+        }
+      })
+      .catch(error => {
+        if (!axios.isCancel(error)) {
+          console.error(error);
+        }
       });
+
+    return () => {
+      isMounted = false;
+      cancelTokenSource.cancel();
+    };
   }, [selectedDate]);
 
   const disabledDays = useMemo(() => {

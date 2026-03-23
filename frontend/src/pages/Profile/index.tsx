@@ -1,4 +1,10 @@
-import React, { useCallback, useRef, useState, ChangeEvent } from "react";
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  ChangeEvent,
+  useEffect,
+} from "react";
 import { useHistory, Link } from "react-router-dom";
 import { FiUser, FiMail, FiLock, FiCamera, FiArrowLeft } from "react-icons/fi";
 import { Form } from "@unform/web";
@@ -27,6 +33,7 @@ interface ProfileFormData {
 
 const Profile: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
+  const isMountedRef = useRef(true);
 
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +41,12 @@ const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
 
   const history = useHistory();
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleSubmit = useCallback(
     async (data: ProfileFormData) => {
@@ -64,7 +77,9 @@ const Profile: React.FC = () => {
           abortEarly: false,
         });
 
-        setLoading(true);
+        if (isMountedRef.current) {
+          setLoading(true);
+        }
 
         const {
           name,
@@ -90,8 +105,6 @@ const Profile: React.FC = () => {
 
         updateUser(response.data);
 
-        history.push("/dashboard");
-
         addToast({
           type: "success",
           title: "Perfil atualizado",
@@ -99,18 +112,26 @@ const Profile: React.FC = () => {
             "Suas informações do perfil foram atualizados com sucesso",
         });
 
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
 
-        history.push("/");
+        history.push("/dashboard");
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
-          setLoading(false);
+          if (isMountedRef.current) {
+            setLoading(false);
+          }
 
           const errors = getValidationErrors(err);
 
           formRef.current?.setErrors(errors);
 
           return;
+        }
+
+        if (isMountedRef.current) {
+          setLoading(false);
         }
 
         addToast({
@@ -125,20 +146,28 @@ const Profile: React.FC = () => {
   );
 
   const handleAvatarChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
+    async (e: ChangeEvent<HTMLInputElement>) => {
       if (e.target.files) {
-        const data = new FormData();
+        try {
+          const data = new FormData();
 
-        data.append("avatar", e.target.files[0]);
+          data.append("avatar", e.target.files[0]);
 
-        api.patch("/users/avatar", data).then(response => {
+          const response = await api.patch("/users/avatar", data);
+
           updateUser(response.data);
 
           addToast({
             type: "success",
             title: "Avatar atualizado",
           });
-        });
+        } catch {
+          addToast({
+            type: "error",
+            title: "Erro no upload do avatar",
+            description: "Não foi possível atualizar o avatar",
+          });
+        }
       }
     },
     [addToast, updateUser],
