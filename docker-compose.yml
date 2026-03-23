@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:12
+    container_name: gobarber-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: gobarber
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:latest
+    container_name: gobarber-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  redis:
+    image: redis:alpine
+    container_name: gobarber-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
+  mongodata:

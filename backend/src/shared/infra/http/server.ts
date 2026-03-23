@@ -2,6 +2,7 @@ import "reflect-metadata";
 import "dotenv/config";
 
 import express, { Request, Response, NextFunction } from "express";
+import fs from "fs";
 import { errors } from "celebrate";
 import "express-async-errors";
 import cors from "cors";
@@ -15,6 +16,14 @@ import "@shared/infra/typeorm";
 import "@shared/container";
 
 const app = express();
+
+fs.mkdirSync(uploadConfig.tmpFolder, {
+  recursive: true,
+});
+
+fs.mkdirSync(uploadConfig.uploadsFolder, {
+  recursive: true,
+});
 
 app.use(cors());
 app.use(express.json());
